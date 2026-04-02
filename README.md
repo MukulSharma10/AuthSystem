@@ -26,7 +26,7 @@ The flow of the working of the project is as follows-
 
 `CREATE TABLE recordings ( id SERIAL PRIMARY KEY, username TEXT, email TEXT, audio_data BYTEA );`
 
-Also create a .env file in the project directory to set up the necessary PGClient environment variables needed to run the project. You can find the .env template in the .envexample file of the repository
+Also create a .env file in the project directory to set up the necessary PGClient environment variables needed to run the project. You can find the .env template in the .env.example file of the repository
 
 ## Features
 
