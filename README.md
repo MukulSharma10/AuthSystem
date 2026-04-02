@@ -1,8 +1,8 @@
-#Voice Based User Authentication System
+# Voice Based User Authentication System
 
 This project is a basic demonstration of an authentication system that grants access to users based on their voice features.
 
-##Working
+## Working
 
 The flow of the working of the project is as follows-
 
@@ -12,7 +12,7 @@ The flow of the working of the project is as follows-
 - Open the login.html page via live server
 - Enter your credentials and speak your passphrase for a successful login
 
-##Requirements
+## Requirements
 
 - Run the following command in your terminal to install the node dependencies in the project
 
@@ -28,11 +28,11 @@ The flow of the working of the project is as follows-
 
 Also create a .env file in the project directory to set up the necessary PGClient environment variables needed to run the project. You can find the .env template in the .envexample file of the repository
 
-##Features
+## Features
 
 - Fast and Reliable User Authentication
 - Voice based passphrase support
 - Multiple audio devices support
 
-##Feedback
+## Feedback
 For any feedback regarding the project, email me at mukulsharma528491@gmail.com
