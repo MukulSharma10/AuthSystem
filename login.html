@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+</head>
+<body>
+    <label>Username:</label>
+    <input type="text" id="username" placeholder="Enter username"/>
+    <button id="check">Check</button>
+
+    <p id="status"></p>
+    <br><br>
+
+    <label>Select Microphone:</label>
+    <select id="micSelect"></select>
+    <br><br>
+
+    <button id="start">Start</button>
+    <button id="rerecord" disabled>Re-record</button>
+    <button id="login" disabled>Login</button>
+
+    <br><br>
+
+    <audio id="preview" controls></audio>
+
+    <script>
+        let mediaRecorder
+        let audioChunks = []
+        let audioBlob
+        let selectedDeviceId = null
+
+        const startBtn = document.getElementById('start')
+        const rerecordBtn = document.getElementById('rerecord')
+        const loginBtn = document.getElementById('login')
+        const preview = document.getElementById('preview')
+        const usernameInput = document.getElementById('username')
+        const checkBtn = document.getElementById('check')
+        const statusText = document.getElementById('status')
+        const micSelect = document.getElementById('micSelect')
+
+        //Loading available microphones
+        async function loadMics(){
+            const devices = await navigator.mediaDevices.enumerateDevices()
+            const audioInputs = devices.filter(d => d.kind === "audioInput")
+
+            micSelect.innerHTML = ""
+
+            audioInputs.forEach((device, index) =>{
+                const option = document.createElement('option')
+                option.value = device.deviceId
+                option.text = device.label || `Microphone ${index + 1}`
+                micSelect.appendChild(option)
+            })
+
+            if (audioInputs.length > 0) selectedDeviceId = audioInputs[0].deviceId
+        }
+
+        //Updating the selected mic
+        micSelect.onchange = ()=>{
+            selectedDeviceId = micSelect.value
+        }
+
+        function resetRecording() {
+            audioBlob = null
+            audioChunks = []
+            preview.src = ""
+            loginBtn.disabled = true
+        }
+
+        checkBtn.onclick = async () =>{
+            const username = usernameInput.value.trim()
+
+            if(!username){
+                alert("Enter username!")
+                return
+            }
+
+            const res = await fetch("http://localhost:3000/check-user", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username})
+            })
+
+            const text = await res.text()
+            statusText.innerText = text
+
+            if(text.includes("exists")){
+                startBtn.disabled = false
+            } else{
+                startBtn.disabled = true
+            }
+        }
+
+        startBtn.onclick = async () =>{
+            
+        resetRecording()
+
+            //Enhanced audio constraints
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio:{
+                    deviceId: selectedDeviceId ? {exact: selectedDeviceId}: undefined,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            })
+        mediaRecorder = new MediaRecorder(stream)
+
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data)
+
+        mediaRecorder.onstop = () =>{
+            audioBlob = new Blob(audioChunks, {type: 'audio/wav'})
+            preview.src = URL.createObjectURL(audioBlob)
+            loginBtn.disabled = false
+            rerecordBtn.disabled = false
+            startBtn.disabled = false
+        }
+
+        mediaRecorder.start()
+        startBtn.disabled = true
+        rerecordBtn.disabled = true
+
+        setTimeout(()=>{
+            if(mediaRecorder.state !== 'inactive'){
+                mediaRecorder.stop()
+            }
+        }, 2000)
+    }
+
+    rerecordBtn.onclick = () => {
+        resetRecording()
+        rerecordBtn.disabled = true
+    }
+
+    loginBtn.onclick = async() =>{
+        console.log("clicked");
+        const fd = new FormData()
+        fd.append('audio', audioBlob, 'login.wav')
+        fd.append('username', usernameInput.value)
+
+        const res = await fetch("http://localhost:3000/login", {
+            method: "POST",
+            body: fd
+        })
+
+        const text = await res.text()
+        alert(text)
+    }
+    </script>
+</body>
+</html>

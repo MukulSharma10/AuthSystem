@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Page</title>
+</head>
+<body>
+    <label>Username:</label>
+    <input type="text" id="username" placeholder="Enter username"/>
+    <br><br>
+    <label>Email Address: </label>
+    <input type="text" id="email" placeholder="Enter email address">
+    <br><br> 
+
+    <label>Select Microphone:</label>
+    <select id="micSelect"></select>
+    <br><br>
+
+    <button id="start">Start</button>
+    <button id="send" disabled>Send</button>
+    <button id="rerecord" disabled>Re-record</button>
+    <br><br>
+    <audio id="preview" controls></audio>
+
+    <script>
+        let mediaRecorder
+        let audioChunks = []
+        let audioBlob
+        let selectedDeviceId = null
+
+        const startBtn = document.getElementById('start')
+        const rerecordBtn = document.getElementById('rerecord')
+        const sendBtn = document.getElementById('send')
+        const preview = document.getElementById('preview')
+        const usernameInput = document.getElementById('username')
+        const emailInput = document.getElementById('email')
+        const micSelect = document.getElementById('micSelect')
+
+        //Loading available microphones
+        async function loadMics(){
+            const devices = await navigator.mediaDevices.enumerateDevices()
+            const audioInputs = devices.filter(d => d.kind === "audioInput")
+
+            micSelect.innerHTML = ""
+
+            audioInputs.forEach((device, index) =>{
+                const option = document.createElement('option')
+                option.value = device.deviceId
+                option.text = device.label || `Microphone ${index + 1}`
+                micSelect.appendChild(option)
+            })
+
+            if (audioInputs.length > 0) selectedDeviceId = audioInputs[0].deviceId
+        }
+
+        //Updating the selected mic
+        micSelect.onchange = ()=>{
+            selectedDeviceId = micSelect.value
+        }
+
+
+        function resetRecording(){
+            audioBlob = null
+            audioChunks = []
+            preview.src = ""
+            sendBtn.disabled = true
+        }
+
+        startBtn.onclick = async () => {
+            if(!usernameInput.value.trim()){
+                alert('Enter username first!')
+                return
+            }
+
+            if(!emailInput.value.trim()){
+                alert('Enter an email address')
+                return
+            }
+
+            resetRecording()
+
+            //Enhanced audio constraints
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio:{
+                    deviceId: selectedDeviceId ? {exact: selectedDeviceId}: undefined,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            })
+
+            mediaRecorder = new MediaRecorder(stream)
+
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data)
+
+            mediaRecorder.onstop = ()=>{
+                audioBlob = new Blob(audioChunks, {type: 'audio/wav'})
+                preview.src = URL.createObjectURL(audioBlob)
+                sendBtn.disabled = false
+                rerecordBtn.disabled = false
+                startBtn.disabled = false
+            }
+
+            mediaRecorder.start()
+            startBtn.disabled = true
+            rerecordBtn.disabled = true
+
+            setTimeout(()=>{
+                if(mediaRecorder.state !== 'inactive'){
+                    mediaRecorder.stop()
+                }
+            }, 2000)
+        }
+
+        rerecordBtn.onclick = () =>{
+            resetRecording()
+            rerecordBtn.disabled = true
+        }
+
+        sendBtn.onclick = async () =>{
+            const fd = new FormData()
+            fd.append('audio', audioBlob, 'recording.wav')
+            fd.append('username', usernameInput.value)
+            fd.append('email', emailInput.value)
+
+            await fetch('http://localhost:3000/upload', {
+                method:"POST",
+                body: fd
+            })
+
+            alert("Registered successfully!")
+        }
+
+        loadMics()    
+    </script>
+</body>
+</html>
