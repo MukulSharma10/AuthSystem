@@ -4,8 +4,6 @@ This project is a basic demonstration of an authentication system that grants ac
 
 ## Local Development
 
-The flow of the working of the project is as follows-
-
 - Run the development server on your local machine
 - Open PgAdmin and connect to the database created earlier for this project
 - Open the registration.html page via live server 
