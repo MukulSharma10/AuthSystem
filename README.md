@@ -7,6 +7,7 @@ This project is a basic demonstration of an authentication system that grants ac
 The flow of the working of the project is as follows-
 
 - Run the development server on your local machine
+- Open PgAdmin and connect to the database created earlier for this project
 - Open the registration.html page via live server 
 - Register your credentials and set up the passphrase
 - Open the login.html page via live server
@@ -22,7 +23,7 @@ The flow of the working of the project is as follows-
 
 `pip install librosa scikit-learn`
 
-- This project requires a connection to a Postgresql database, create the database by running the following command in your PGAdmin dashboard
+- This project requires a connection to a Postgresql database, create the database by running the following command in your PgAdmin dashboard
 
 `CREATE TABLE recordings ( id SERIAL PRIMARY KEY, username TEXT, email TEXT, audio_data BYTEA );`
 
