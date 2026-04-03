@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Passphrase</title>
+</head>
+<body>
+    <input type="text" id='user' placeholder="Username"/>
+    <br><br>
+    <button id="check-user">Send OTP</button>
+
+    <script>
+        const checkBtn = document.getElementById('check-user')
+        const userInput = document.getElementById('user')
+
+        checkBtn.onclick = async() =>{
+            const username = userInput.value.trim()
+
+            if(!username){
+                alert("Enter a username!")
+                return 
+            }
+
+            const res = await fetch("http://localhost:3000/check-user", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username})
+            })
+
+            const text = await res.text()
+            if(text.includes("not")){
+                alert("User does not exist! Enter a valid Username")
+                return
+            } else{
+                setTimeout(function(){
+                    window.location.href = "reset.html"
+                }, 1000)
+            }
+        }
+    </script>
+
+</body>
+</html>
