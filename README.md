@@ -2,7 +2,7 @@
 
 This project is a basic demonstration of an authentication system that grants access to users based on their voice features.
 
-## Working
+## Local Development
 
 The flow of the working of the project is as follows-
 
