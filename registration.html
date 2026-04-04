@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registration Page</title>
+    <link rel="stylesheet" href="/assets/stylesheet.css">
 </head>
 <body>
-    <label>Username:</label>
-    <input type="text" id="username" placeholder="Enter username"/>
+    <div>
+
+    <input type="text" id="username" placeholder="Username"/>
     <br><br>
-    <label>Email Address: </label>
-    <input type="text" id="email" placeholder="Enter email address">
+    <input type="text" id="email" placeholder="E-mail address">
     <br><br> 
 
     <label>Select Microphone:</label>
@@ -21,7 +22,9 @@
     <button id="send" disabled>Send</button>
     <button id="rerecord" disabled>Re-record</button>
     <br><br>
-    <audio id="preview" controls></audio>
+    <audio id="preview" controls controlsList="noplaybackrate"></audio>
+    
+    </div>
 
     <script>
         let mediaRecorder

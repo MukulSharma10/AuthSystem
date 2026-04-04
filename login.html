@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Page</title>
+    <link rel="stylesheet" href="/assets/stylesheet.css">
 </head>
 <body>
-    <label>Username:</label>
+    <div class="login">
     <input type="text" id="username" placeholder="Enter username"/>
     <button id="check">Check</button>
 
@@ -23,7 +24,13 @@
 
     <br><br>
 
-    <audio id="preview" controls></audio>
+    <audio id="preview" controls controlsList="noplaybackrate"></audio>
+
+    <br><br>
+
+    <a href="/reset.html">Forgot Password?</a>
+
+    </div>
 
     <script>
         let mediaRecorder
