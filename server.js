@@ -29,6 +29,7 @@ const pool = new Pool({
     database: process.env.PGDATABASE
 })
 
+//Encrypts the audio file
 function encrypt(buffer) {
     const iv = crypto.randomBytes(16)
     const cipher = crypto.createCipheriv("aes-256-cbc", SECRET_KEY, iv)
@@ -38,6 +39,7 @@ function encrypt(buffer) {
     return Buffer.concat([iv, encrypted])
 }
 
+//Decrypts the encrypted audio file
 function decrypt(buffer){
     const iv = buffer.slice(0, 16)
     const encyptedData = buffer.slice(16)
@@ -46,6 +48,7 @@ function decrypt(buffer){
     return Buffer.concat([decipher.update(encyptedData), decipher.final()])
 }
 
+//Uploading audio file to the database
 app.post('/upload', upload.single("audio"), async (req, res)=>{
     try{
         const username = req.body.username
@@ -70,6 +73,7 @@ app.post('/upload', upload.single("audio"), async (req, res)=>{
     }
 })
 
+//Checks if the user exists in the database
 app.post("/check-user", async(req, res)=>{
     try{
         const username = req.body.username
@@ -89,6 +93,26 @@ app.post("/check-user", async(req, res)=>{
     }
 })
 
+app.post("/find-email", async(req, res)=>{
+    try{
+        const username = req.body.username
+
+        const result = await pool.query(
+            "SELECT email from recordings WHERE username = $1 LIMIT 1", [username]
+        )
+
+        if(result.rows.length === 0){
+            res.send("User does not exist")
+        } else{
+            res.send(result.rows[0]['email'])
+        }
+    } catch(err){
+        console.log(err)
+        res.status(500).send("Error")
+    }
+})
+
+//Handles the login requests
 app.post('/login', upload.single('audio'), async(req, res)=>{
     try{
         const username = req.body.username

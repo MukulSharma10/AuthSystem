@@ -3,9 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Password</title>
+    <title>Reset Passphrase</title>
 </head>
 <body>
-    
+    <input type="text" id='user' placeholder="Username" autocomplete="off"/>
+    <br><br>
+    <button id="check-user">Send OTP</button>
+    <p id="status"></p>
+    <br><br><br>
+    <input type="text" autocomplete="off" placeholder="Enter OTP"/>
+    <br><br>
+    <button id="checkOTP">Submit</button>
+
+    <script>
+        const checkBtn = document.getElementById('check-user')
+        const userInput = document.getElementById('user')
+        const statusText = document.getElementById('status')
+        
+        let email
+
+        checkBtn.onclick = async() =>{
+            const username = userInput.value.trim()
+
+            if(!username){
+                alert("Enter a username!")
+                return 
+            }
+
+            const res = await fetch("http://localhost:3000/find-email", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username})
+            })
+
+            const text = await res.text()
+
+            if(text.includes("not")){
+                statusText.innerText = "User does not exist! Enter a valid Username"
+                return
+            } else{
+                statusText.innerText = "OTP sent successfully!"
+                email = text
+                console.log(email)
+            }
+        }
+
+        async function generateOTP() {
+            
+        }
+    </script>
+
 </body>
 </html>
