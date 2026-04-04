@@ -7,6 +7,8 @@ const {spawn} = require("child_process")
 const fs = require("fs")
 const path = require("path")
 const {execSync} = require("child_process")
+const otpGenerator = require("otp-generator")
+const nodemailer = require("nodemailer")
 require('dotenv').config()
 
 const port = 3000
@@ -27,6 +29,14 @@ const pool = new Pool({
     host: process.env.PGHOST,
     port: process.env.PGPORT,
     database: process.env.PGDATABASE
+})
+
+//Generating actual OTP
+const otp = otpGenerator.generate(6, {
+    digits: true,
+    lowerCaseAlphabets: false,
+    upperCaseAlphabets: false,
+    specialChars: false
 })
 
 //Encrypts the audio file

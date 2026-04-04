@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Passphrase</title>
+    <link rel="stylesheet" href="/assets/stylesheet.css">
 </head>
 <body>
+    <div>
     <input type="text" id='user' placeholder="Username" autocomplete="off"/>
     <br><br>
     <button id="check-user">Send OTP</button>
@@ -14,6 +16,7 @@
     <input type="text" autocomplete="off" placeholder="Enter OTP"/>
     <br><br>
     <button id="checkOTP">Submit</button>
+    </div>
 
     <script>
         const checkBtn = document.getElementById('check-user')
