@@ -13,15 +13,17 @@
     <button id="check-user">Send OTP</button>
     <p id="status"></p>
     <br><br><br>
-    <input type="text" autocomplete="off" placeholder="Enter OTP"/>
+    <input id="otp" type="text" autocomplete="off" placeholder="Enter OTP"/>
     <br><br>
-    <button id="checkOTP">Submit</button>
+    <button id="checkOTP" onclick="verifyOTP()">Submit</button>
+    <p id="response"></p>
     </div>
 
     <script>
         const checkBtn = document.getElementById('check-user')
         const userInput = document.getElementById('user')
         const statusText = document.getElementById('status')
+        const responseText = document.getElementById('response')
         
         let email
 
@@ -44,16 +46,54 @@
             if(text.includes("not")){
                 statusText.innerText = "User does not exist! Enter a valid Username"
                 return
-            } else{
-                statusText.innerText = "OTP sent successfully!"
-                email = text
-                console.log(email)
             }
+
+            email = text
+            await generateOTP()
         }
 
         async function generateOTP() {
-            
+            if(!email){
+                statusText.innerText = 'Please enter a valid username first'
+                return
+            }
+
+            const response = await fetch('http://localhost:3000/generate-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email })
+            })
+
+            const result = await response.text()
+            statusText.innerText = result
         }
+
+        async function verifyOTP(){
+            if(!email){
+                responseText.innerText = 'Please generate an OTP first'
+                return
+            }
+
+            const otp = document.getElementById('otp').value.trim()
+            if(!otp){
+                responseText.innerText = 'Enter the OTP before submitting'
+                return
+            }
+
+            const response = await fetch('http://localhost:3000/verify-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, otp })
+            })
+
+            const result = await response.text()
+            responseText.innerText = result
+        }
+
     </script>
 
 </body>
