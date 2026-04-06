@@ -21,9 +21,10 @@ This project is a basic demonstration of an authentication system that grants ac
 
 `pip install librosa scikit-learn`
 
-- This project requires a connection to a Postgresql database, create the database by running the following command in your PgAdmin dashboard
+- This project requires a connection to a Postgresql database, create the databases by running the following commands in your PgAdmin dashboard
 
 `CREATE TABLE recordings ( id SERIAL PRIMARY KEY, username TEXT, email TEXT, audio_data BYTEA );`
+`CREATE TABLE otp_codes ( id SERIAL PRIMARY KEY, email TEXT NOT NULL, otp TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );`
 
 Also create a .env file in the project directory to set up the necessary PGClient environment variables needed to run the project. You can find the .env template in the .env.example file of the repository
 
@@ -32,6 +33,7 @@ Also create a .env file in the project directory to set up the necessary PGClien
 - Fast and Reliable User Authentication
 - Voice based passphrase support
 - Multiple audio devices support
+- Additional OTP verification to reset credentials
 
 ## Feedback
 For any feedback regarding the project, email me at mukulsharma528491@gmail.com
