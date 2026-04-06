@@ -92,6 +92,10 @@
 
             const result = await response.text()
             responseText.innerText = result
+
+            if (response.ok) {
+                window.location.href = `newpass.html?email=${encodeURIComponent(email)}`
+            }
         }
 
     </script>

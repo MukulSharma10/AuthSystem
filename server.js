@@ -86,7 +86,7 @@ app.post('/upload', upload.single("audio"), async (req, res)=>{
             [username, email, encryptedAudio]
         )
 
-        res.send("User registered & Audio Encrypted!")
+        res.send("User registered & Passphrase Encrypted!")
     } catch(err){
         console.error(err)
         res.status(500).send("Error")
@@ -269,5 +269,24 @@ app.post('/verify-otp', async(req, res) =>{
     }
 })
 
+//ROUTE TO UPDATE THE NEW PASSPHRASE FOR THE GIVEN USER
+app.put('/update-passphrase/:id', async(req, res) =>{
+    try{
+    const { email } = req.params
+    const { audioBlob } = req.body
+
+    const encryptedAudio = encrypt(audioBlob)
+
+    await pool.query(
+        "UPDATE users SET audio_data = $1 WHERE email = $2",
+        [encryptedAudio, email]
+    )
+
+    res.send("Passphrase updated!")
+    } catch(err){
+        console.error(err)
+        res.status(500).send("Error")
+    }
+})
 
 app.listen(port, ()=> console.log(`Server running on port ${port}`))

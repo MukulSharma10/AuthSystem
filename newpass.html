@@ -3,33 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Page</title>
+    <title>Reset Passphrase</title>
     <link rel="stylesheet" href="/assets/stylesheet.css">
 </head>
 <body>
-    <div class="login">
-    <input type="text" id="username" placeholder="Enter username"/>
-    <button id="check">Check</button>
+    <div>
+        <h2>New passphrase:</h2>
+        <br>
 
-    <p id="status"></p>
-    <br><br>
+        <label>Select Microphone:</label>
+        <select id="micSelect"></select>
+        <br><br>
 
-    <label>Select Microphone:</label>
-    <select id="micSelect"></select>
-    <br><br>
-
-    <button id="start">Start</button>
-    <button id="rerecord" disabled>Re-record</button>
-    <button id="login" disabled>Login</button>
-
-    <br><br>
-
-    <audio id="preview" controls controlsList="noplaybackrate"></audio>
-
-    <br><br>
-
-    <a href="/reset.html">Forgot Password?</a>
-
+        <button id="start">Start</button>
+        <button id="re-record" disabled>Re-record</button>
+        <button id="confirm" disabled>Confirm</button>
+        <br><br>
+        <audio id="preview" controls controlsList="noplaybackrate"></audio>
+        <br><br>
+        <p id="status"></p>
     </div>
 
     <script>
@@ -38,12 +30,13 @@
         let audioBlob
         let selectedDeviceId = null
 
+        const urlParams = new URLSearchParams(window.location.search)
+        const email = urlParams.get('email')
+
         const startBtn = document.getElementById('start')
-        const rerecordBtn = document.getElementById('rerecord')
-        const loginBtn = document.getElementById('login')
+        const rerecordBtn = document.getElementById('re-record')
+        const confirmBtn = document.getElementById('confirm')
         const preview = document.getElementById('preview')
-        const usernameInput = document.getElementById('username')
-        const checkBtn = document.getElementById('check')
         const statusText = document.getElementById('status')
         const micSelect = document.getElementById('micSelect')
 
@@ -69,44 +62,19 @@
             selectedDeviceId = micSelect.value
         }
 
-        function resetRecording() {
+        function resetRecording(){
             audioBlob = null
             audioChunks = []
             preview.src = ""
-            loginBtn.disabled = true
+            confirmBtn.disabled = true
         }
 
-        checkBtn.onclick = async () =>{
-            const username = usernameInput.value.trim()
+        startBtn.onclick = async () => {
 
-            if(!username){
-                alert("Enter username!")
-                return
-            }
-
-            const res = await fetch("http://localhost:3000/check-user", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({username})
-            })
-
-            const text = await res.text()
-            statusText.innerText = text
-
-            if(text.includes("exists")){
-                startBtn.disabled = false
-            } else{
-                startBtn.disabled = true
-            }
-        }
-
-        startBtn.onclick = async () =>{
-            
         resetRecording()
 
-            //Enhanced audio constraints
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio:{
+        const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
                     deviceId: selectedDeviceId ? {exact: selectedDeviceId}: undefined,
                     echoCancellation: true,
                     noiseSuppression: true,
@@ -118,10 +86,10 @@
 
             mediaRecorder.ondataavailable = e => audioChunks.push(e.data)
 
-        mediaRecorder.onstop = () =>{
+        mediaRecorder.onstop = ()=>{
             audioBlob = new Blob(audioChunks, {type: 'audio/wav'})
             preview.src = URL.createObjectURL(audioBlob)
-            loginBtn.disabled = false
+            confirmBtn.disabled = false
             rerecordBtn.disabled = false
             startBtn.disabled = false
         }
@@ -137,25 +105,30 @@
         }, 2000)
     }
 
-    rerecordBtn.onclick = () => {
-        resetRecording()
-        rerecordBtn.disabled = true
-    }
+        rerecordBtn.onclick = () =>{
+            resetRecording()
+            rerecordBtn.disabled = true
+        }
 
-    loginBtn.onclick = async() =>{
-        console.log("clicked");
-        const fd = new FormData()
-        fd.append('audio', audioBlob, 'login.wav')
-        fd.append('username', usernameInput.value)
+            //CONFIRM BUTTON ROUTE
+        confirmBtn.onclick = async () =>{
+                
+            const fd = new FormData()
+            fd.append('audio', audioBlob, 'recording.wav')
+            fd.append('email', email.value)
 
-        const res = await fetch("http://localhost:3000/login", {
-            method: "POST",
-            body: fd
-        })
+            const response = await fetch('http://localhost:3000/update-passphrase', {
+                method: 'POST',
+                body: fd
+            })
 
-        const text = await res.text()
-        alert(text)
-    }
+            statusText.innerText = 'Passphrase Updated Sucessfully!'
+
+            if (response.ok) {
+                window.location.href = 'login.html'
+            }
+        }
+        loadMics()
     </script>
 </body>
 </html>
