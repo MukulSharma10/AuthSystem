@@ -125,7 +125,9 @@
             statusText.innerText = 'Passphrase Updated Sucessfully!'
 
             if (response.ok) {
-                window.location.href = 'login.html'
+                setTimeout(function(){
+                    window.location.href = 'login.html'
+                }, 800)
             }
         }
         loadMics()

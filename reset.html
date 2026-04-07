@@ -97,7 +97,9 @@
             responseText.innerText = result
 
             if (response.ok) {
-                window.location.href = `newpass.html?email=${encodeURIComponent(email)}`
+                setTimeout(function(){
+                    window.location.href = `newpass.html?email=${encodeURIComponent(email)}`
+                }, 800)
             }
         }
 
