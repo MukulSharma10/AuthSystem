@@ -125,11 +125,11 @@
 
         sendBtn.onclick = async () =>{
             const fd = new FormData()
-            fd.append('audio', audioBlob, 'recording.wav')
             fd.append('username', usernameInput.value)
             fd.append('email', emailInput.value)
+            fd.append('audio', audioBlob, 'recording.wav')
 
-            await fetch('http://localhost:3000/upload', {
+            await fetch('http://127.0.0.1:8000/upload', {
                 method:"POST",
                 body: fd
             })
