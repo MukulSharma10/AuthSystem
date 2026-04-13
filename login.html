@@ -149,16 +149,17 @@
     loginBtn.onclick = async() =>{
         console.log("clicked");
         const fd = new FormData()
-        fd.append('audio', audioBlob, 'login.wav')
+        fd.append('file', audioBlob, 'login.wav')
         fd.append('username', usernameInput.value)
 
-        const res = await fetch("http://localhost:3000/login", {
+        const res = await fetch("http://127.0.0.1:8000/match", {
             method: "POST",
             body: fd
         })
 
-        const text = await res.text()
-        alert(text)
+        const data = await res.json()
+        console.log(data)
+        alert(data.status)
     }
     </script>
 </body>
