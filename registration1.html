@@ -31,7 +31,7 @@
             fd.append('username', usernameInput.value)
             fd.append('email', emailInput.value)
 
-            await fetch("" , {
+            await fetch("http://localhost:3000/upload-details" , {
                 method: "POST",
                 body: fd
             })

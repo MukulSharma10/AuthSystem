@@ -75,6 +75,23 @@ app.post("/find-email", async(req, res)=>{
     }
 })
 
+app.post("/upload-details", async(req, res)=>{
+    try{
+        const username = req.body.username
+        const email = req.body.email
+
+        await pool.query(
+            `INSERT INTO voice_features (username, email) VALUES ($1, $2)`,
+            [username, email]
+        )
+
+        res.send("Details stored. Redirecting to the passphrase page...")
+    } catch(err){
+        console.log(err)
+        res.status(500).send("Error")
+    }
+})
+
 //ROUTE TO SEND OTPs TO USER'S EMAIL
 app.post('/generate-otp', async(req, res) => {
     const email = req.body.email || req.body.emailAddress
