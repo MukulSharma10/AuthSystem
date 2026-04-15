@@ -11,9 +11,10 @@ import hashlib
 import base64
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
-import io
 from sklearn.metrics.pairwise import cosine_similarity
 import soundfile as sf
+import json
+from librosa.sequence import dtw
 
 app = FastAPI()
 
@@ -46,62 +47,45 @@ conn = psycopg2.connect(
 @app.post('/match')
 async def match_voice(
     username: str = Form(...),
-    file: UploadFile = File(...)
+    audio: UploadFile = File(...)
 ):
-    threshold = 0.95
-    
     try:
-        audio_bytes = await file.read()
-        mfcc_input = extract_mfcc_from_bytes(audio_bytes)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp:
+            temp.write(await audio.read())
+            temp_path = temp.name
         
-        if mfcc_input is None:
-            return {
-                "status": "error",
-                "message": "MFCC extraction failed for input audio"
-            }
+        test_mfcc = extract_mfcc_full(temp_path)
         
-        curr = conn.cursor()
-        curr.execute(
-            "SELECT mfcc_data FROM recordings WHERE username = %s",
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT mfcc_matrix FROM voice_features WHERE username = %s",
             (username,)
         )
-        result = curr.fetchone()
         
-        if not result:
-            return {
-                "status": "fail",
-                "message": "User not found"
-            }
+        rows = cur.fetchall()
         
-        encrypted_mfcc = bytes(result[0])
-        decrypted_bytes = cipher.decrypt(encrypted_mfcc)
+        if not rows:
+            return {"error": "User not found"}
         
-        mfcc_stored = np.frombuffer(decrypted_bytes, dtype=np.float32)
+        scores = []
+
+        for row in rows:
+            stored_mfcc = row[0]
+            
+            score = dtw_cosine_mfcc(test_mfcc, stored_mfcc)
+            scores.append(score)
+            
+        final_score = float(np.mean(scores))
         
-        similarity = compare_mfcc(
-            mfcc_input,
-            mfcc_stored.reshape(1, -1)
-        )
+        os.remove(temp_path)
+        cur.close()
         
-        print(similarity)
+        os.getenv('THRESHOLD') = 0.75
         
-        if similarity is None:
-            return {
-                "status": "error",
-                "message": "Comparison failed"
-            }
-        
-        
-        if similarity >= threshold:
-            return { 
-                "status": "success",
-                "score": float(similarity)
-            }
-        else:
-            return {
-                "status": "fail",
-                "score": float(similarity)
-            }
+        return {
+            "result": "MATCH" if final_score >= os.getenv('THRESHOLD') else "NO_MATCH",
+            "score": final_score
+        }
         
     except Exception as e:
         return { "status": "error", "message": str(e)}
@@ -109,44 +93,30 @@ async def match_voice(
 @app.post("/upload")
 async def upload_audio(
     username: str = Form(...),
-    email: str = Form(...),
     audio: UploadFile = File(...)
 ):
     try:
-        if not username or not email:
-            return {"status": "fail", "message": "Missing username or email"}
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp:
+            temp.write(await audio.read())
+            temp_path = temp.name
+            
+        mfcc_matrix = extract_mfcc_full(temp_path)
         
-        audio_bytes = await audio.read()
-        
-        mfcc = extract_mfcc_from_bytes(audio_bytes, filename=audio.filename, content_type=audio.content_type)
-        if mfcc is None:
-            return {
-                "status": "error",
-                "message": "MFCC extraction failed for uploaded audio"
-            }
-        
-        mfcc_bytes = mfcc.astype(np.float32).tobytes()
-        
-        encrypted_mfcc = cipher.encrypt(mfcc_bytes)
-        
-        #DATABASE INSERTION OPERATION
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO recordings (username, email, mfcc_data) VALUES(%s, %s, %s)", (username, email, encrypted_mfcc)
+            "INSERT INTO voice_features (username, mfcc_matrix) VALUES (%s, %s)", (username, json.dumps(mfcc_matrix))
         )
         conn.commit()
+        cur.close()
+        
+        os.remove(temp_path)
         
         return {
-            "status": "success",
-            "message": "User registered & Passphrase stored!"
+            "message": "MFCC matrix stored successfully"
         }
-        
-    except Exception as err:
-        print(err)
-        return {
-            "status": "error",
-            "message": str(err)
-        }
+    
+    except Exception as e:
+        return {"error": str(e)}
         
 def extract_mfcc_from_bytes(audio_bytes, filename=None, content_type=None, target_sr=16000, n_mfcc=13):
     suffix = None
@@ -214,3 +184,62 @@ def compare_mfcc(mfcc1, mfcc2):
     return float(
         cosine_similarity([flat_mfcc1], [flat_mfcc2])[0][0]
     )
+    
+def extract_mfcc(file_path):
+    y, sr = librosa.load(file_path, sr=None)
+
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+
+    # Convert to fixed-size vector
+    mfcc_mean = np.mean(mfcc, axis=1)
+    mfcc_std = np.std(mfcc, axis=1)
+
+    features = np.concatenate([mfcc_mean, mfcc_std]) 
+    return features.tolist()
+
+def build_template(cursor, username):
+    cursor.execute(
+        "SELECT mfcc_features FROM voice_features WHERE username = %s",
+        (username,)
+    )
+    
+    rows = cursor.fetchall()
+    
+    if not rows:
+        return None
+    
+    vectors = np.array([row[0] for row in rows])
+    
+    template = np.mean(vectors, axis=0)
+    
+    return template
+
+def extract_mfcc_full(file_path):
+    y, sr = librosa.load(file_path, sr=None)
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+    return mfcc.tolist()
+
+def dtw_cosine_mfcc(mfcc1, mfcc2):
+    mfcc1 = np.array(mfcc1)
+    mfcc2 = np.array(mfcc2)
+    
+    mfcc1_T = mfcc1.T
+    mfcc2_T = mfcc2.T
+    
+    D, wp = dtw(mfcc1_T, mfcc2_T)
+    
+    aligned_1 = []
+    aligned_2 = []
+    
+    for i,j in wp:
+        aligned_1.append(mfcc1[:, i])
+        aligned_2.append(mfcc2[:, j])
+    
+    aligned_1 = np.array(aligned_1)
+    aligned_2 = np.array(aligned_2)
+    
+    similarities = [
+        cosine_similarity([v1], [v2])[0][0] for v1, v2 in zip(aligned_1, aligned_2)
+    ]
+    
+    return float(np.mean(similarities))

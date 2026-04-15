@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Page</title>
+    <link rel="stylesheet" href="./assets/stylesheet.css">
+</head>
+<body>
+    <div>
+        <h1>Welcome to the Registration Page</h1>
+
+        <input type="text" id="username" placeholder="Username"/>
+        <br><br>
+        <input type="text" id="email" placeholder="E-mail address">
+        <br><br>
+        <p id="status"></p>
+        <br><br>
+        <button id="submit">Submit</button>
+        
+    </div>
+
+    <script>
+        const statusText = document.getElementById('status')
+        const submitBtn = document.getElementById('submit')
+        const usernameInput = document.getElementById('username')
+        const emailInput = document.getElementById('email')
+
+        submitBtn.onclick = async() =>{
+            const fd = new FormData()
+            fd.append('username', usernameInput.value)
+            fd.append('email', emailInput.value)
+
+            await fetch("" , {
+                method: "POST",
+                body: fd
+            })
+
+            statusText.innerText = 'User registered. Redirecting to the recording page'
+
+            localStorage.setItem("username", usernameInput)
+        }
+
+    </script>
+    
+</body>
+</html>
