@@ -53,19 +53,27 @@
 
         //Loading available microphones
         async function loadMics(){
-            const devices = await navigator.mediaDevices.enumerateDevices()
-            const audioInputs = devices.filter(d => d.kind === "audioInput")
+            try{
+                await navigator.mediaDevices.getUserMedia({ audio: true })
 
-            micSelect.innerHTML = ""
+                const devices = await navigator.mediaDevices.enumerateDevices()
 
-            audioInputs.forEach((device, index) =>{
-                const option = document.createElement('option')
-                option.value = device.deviceId
-                option.text = device.label || `Microphone ${index + 1}`
-                micSelect.appendChild(option)
+                const mics = devices.filter(d => d.kind === "audioinput")
+
+                micSelect.innerHTML = ""
+
+                mics.forEach((mic, index) => {
+                    const option = document.createElement("option")
+                    option.value = mic.deviceId
+                    option.text = mic.label || `Microphone ${index + 1}`
+                    micSelect.appendChild(option)
             })
 
-            if (audioInputs.length > 0) selectedDeviceId = audioInputs[0].deviceId
+        selectedDeviceId = micSelect.value
+            } catch(err){
+                console.error(err)
+                statusText.innerText = "Microphone permission denied!"
+            }
         }
 
         //Updating the selected mic
@@ -161,6 +169,8 @@
         console.log(data)
         alert(data.status)
     }
+
+    loadMics()
     </script>
 </body>
 </html>
