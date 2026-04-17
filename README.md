@@ -4,12 +4,13 @@ This project is a basic demonstration of an authentication system that grants ac
 
 ## Local Development
 
-- Run the development server on your local machine
+- Run the development servers on your local machine
 - Open PgAdmin and connect to the database created earlier for this project
-- Open the registration.html page via live server 
+- Open the registration1.html page via live server 
 - Register your credentials and set up the passphrase
 - Open the login.html page via live server
 - Enter your credentials and speak your passphrase for a successful login
+- For changing passphrase, A forget password page is available that sends OTP to the email address of the username provided by the user
 
 ## Requirements
 
@@ -19,11 +20,11 @@ This project is a basic demonstration of an authentication system that grants ac
 
 - Run the following command in your terminal to install the python dependencies in the project
 
-`pip install librosa scikit-learn`
+`pip install fastapi uvicorn librosa numpy scikit-learn psycopg2-binary cryptography python-dotenv soundfile`
 
 - This project requires a connection to a Postgresql database, create the databases by running the following commands in your PgAdmin dashboard
 
-`CREATE TABLE recordings ( id SERIAL PRIMARY KEY, username TEXT, email TEXT, audio_data BYTEA );`
+`CREATE TABLE voice_features ( id SERIAL PRIMARY KEY, username TEXT, email TEXT mfcc_features FLOAT[], created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`
 
 `CREATE TABLE otp_codes ( id SERIAL PRIMARY KEY, email TEXT NOT NULL, otp TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP );`
 
@@ -33,7 +34,7 @@ Also create a .env file in the project directory to set up the necessary PGClien
 
 - Fast and Reliable User Authentication
 - Voice based passphrase support
-- Multiple audio devices support
+- Multiple audio devices supported
 - Additional OTP verification to reset credentials
 
 ## Feedback
