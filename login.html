@@ -26,7 +26,7 @@
 
     <br><br>
 
-    <audio id="preview" controls controlsList="noplaybackrate"></audio>
+    <audio id="preview" controls controlsList="noplaybackrate nodownload"></audio>
 
     <br><br>
 
@@ -157,7 +157,7 @@
     loginBtn.onclick = async() =>{
         console.log("clicked");
         const fd = new FormData()
-        fd.append('file', audioBlob, 'login.wav')
+        fd.append('audio', audioBlob, 'login.wav')
         fd.append('username', usernameInput.value)
 
         const res = await fetch("http://127.0.0.1:8000/match", {
@@ -167,7 +167,7 @@
 
         const data = await res.json()
         console.log(data)
-        alert(data.status)
+        alert(data.result)
     }
 
     loadMics()

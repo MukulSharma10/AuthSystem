@@ -26,7 +26,7 @@
 
         <br><br>
 
-        <audio id="preview" controls controlsList="noplaybackrate"></audio>
+        <audio id="preview" controls controlsList="noplaybackrate nodownload"></audio>
 
         <br><br>
 
@@ -168,6 +168,7 @@
             status.innerText = "Uploading samples..."
 
             const username = localStorage.getItem("username")
+            const email = localStorage.getItem("email")
 
             const fd = new FormData()
 
@@ -176,6 +177,7 @@
             })
 
             fd.append("username", username)
+            fd.append("email", email)
 
             console.log(samples.length)
             
