@@ -9,6 +9,7 @@
 <body>
     <div>
         <h1>Record Your Passphrase (5 samples)</h1>
+        <p id="welcome"></p>
         <p>Please say the same phrase clearly each time.</p>
         <br>
 
@@ -31,6 +32,8 @@
 
         <p id="status"></p>
         <ul id="sampleList"></ul>
+
+        <a href="./login.html">Already a user? Login instead</a>
     </div>
 
     <script>
@@ -143,23 +146,53 @@
             submitBtn.disabled = true
         }
 
+        function getUsernameFromQuery() {
+            const params = new URLSearchParams(window.location.search)
+            return params.get('username')
+        }
+
+        const welcomeText = document.getElementById('welcome')
+        const queryUsername = getUsernameFromQuery()
+        const savedUsername = queryUsername || localStorage.getItem('username')
+
+        if (savedUsername) {
+            welcomeText.innerText = `Username: ${savedUsername}`
+            localStorage.setItem('username', savedUsername)
+        } else {
+            welcomeText.innerText = 'No username provided. Please return to registration1.html and enter a username.'
+        }
+
         submitBtn.onclick = async () => {
+            submit.disabled = true
+            try{
             status.innerText = "Uploading samples..."
 
             const username = localStorage.getItem("username")
 
-            for(let i = 0; i < samples.length; i++){
-                const fd = new FormData()
-                fd.append("audio", samples[i], `sample_${i}.wav`)
-                fd.append("username", username)
+            const fd = new FormData()
 
-                await fetch("/upload", {
-                    method: "POST",
-                    body: fd
-                })
-            }
+            samples.forEach((sample, i)=>{
+                fd.append("audios", sample)
+            })
+
+            fd.append("username", username)
+
+            console.log(samples.length)
+            
+            const res = await fetch("http://127.0.0.1:8000/upload", {
+                method: "POST",
+                body: fd
+            })
+
+            const data = await res.json()
+
+            console.log("Server response: ", data)
 
             status.innerText = "All samples uploaded successfully!"
+        }catch(err){
+            console.error(err)
+            status.innerText = "Upload failed!"
+        }
         }
 
         loadMics()

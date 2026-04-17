@@ -26,22 +26,34 @@
         const usernameInput = document.getElementById('username')
         const emailInput = document.getElementById('email')
 
-        submitBtn.onclick = async() =>{
-            const fd = new FormData()
-            fd.append('username', usernameInput.value)
-            fd.append('email', emailInput.value)
+        submitBtn.onclick = async () => {
+            const username = usernameInput.value.trim()
+            const email = emailInput.value.trim()
 
-            await fetch("http://localhost:3000/upload-details" , {
+            if (!username) {
+                statusText.innerText = 'Please enter a username.'
+                return
+            }
+
+            const response = await fetch("http://localhost:3000/upload-details", {
                 method: "POST",
-                body: fd
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ username, email })
             })
 
-            statusText.innerText = 'User registered. Redirecting to the recording page'
+            if (response.ok) {
+                localStorage.setItem('username', username)
+                statusText.innerText = 'User registered. Redirecting to the recording page...'
 
-            localStorage.setItem("username", usernameInput)
+                setTimeout(() => {
+                    window.location.href = `registration2.html?username=${encodeURIComponent(username)}`
+                }, 800)
+            } else {
+                statusText.innerText = 'Registration failed. Please try again.'
+            }
         }
-
     </script>
-    
 </body>
 </html>
