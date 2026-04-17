@@ -42,7 +42,7 @@ app.post("/check-user", async(req, res)=>{
         const username = req.body.username
 
         const result = await pool.query(
-            "SELECT 1 from recordings WHERE username = $1 LIMIT 1", [username]
+            "SELECT 1 from voice_features WHERE username = $1 LIMIT 1", [username]
         )
 
         if(result.rows.length === 0){
@@ -61,7 +61,7 @@ app.post("/find-email", async(req, res)=>{
         const username = req.body.username
 
         const result = await pool.query(
-            "SELECT email from recordings WHERE username = $1 LIMIT 1", [username]
+            "SELECT email from voice_features WHERE username = $1 LIMIT 1", [username]
         )
 
         if(result.rows.length === 0){
@@ -69,6 +69,23 @@ app.post("/find-email", async(req, res)=>{
         } else{
             res.send(result.rows[0]['email'])
         }
+    } catch(err){
+        console.log(err)
+        res.status(500).send("Error")
+    }
+})
+
+app.post("/upload-details", async(req, res)=>{
+    try{
+        const username = req.body.username
+        const email = req.body.email
+
+        await pool.query(
+            `INSERT INTO voice_features (username, email) VALUES ($1, $2)`,
+            [username, email]
+        )
+
+        res.send("Details stored. Redirecting to the passphrase page...")
     } catch(err){
         console.log(err)
         res.status(500).send("Error")
@@ -139,26 +156,6 @@ app.post('/verify-otp', async(req, res) =>{
     } catch(error) {
         console.log(error)
         res.status(500).send('Error verifying OTP')
-    }
-})
-
-//ROUTE TO UPDATE THE NEW PASSPHRASE FOR THE GIVEN USER
-app.put('/update-passphrase/:id', async(req, res) =>{
-    try{
-    const { email } = req.params
-    const { audioBlob } = req.body
-
-    const encryptedAudio = encrypt(audioBlob)
-
-    await pool.query(
-        "UPDATE users SET audio_data = $1 WHERE email = $2",
-        [encryptedAudio, email]
-    )
-
-    res.send("Passphrase updated!")
-    } catch(err){
-        console.error(err)
-        res.status(500).send("Error")
     }
 })
 

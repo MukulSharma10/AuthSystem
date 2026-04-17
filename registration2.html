@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record your passphrase</title>
+    <link rel="stylesheet" href="./assets/stylesheet.css">
+</head>
+<body>
+    <div>
+        <h1>Record Your Passphrase (5 samples)</h1>
+        <p id="welcome"></p>
+        <p>Please say the same phrase clearly each time.</p>
+        <br>
+
+        <label>Select Microphone</label>
+        <select id="micSelect"></select>
+        <br><br>
+
+        <h3 id="progress">Sample 0/5</h3>
+
+        <button id="start">Start</button>
+        <button id="next" disabled>Next</button>
+        <button id="restart" disabled>Restart All</button>
+        <button id="submit" disabled>Submit All</button>
+
+        <br><br>
+
+        <audio id="preview" controls controlsList="noplaybackrate nodownload"></audio>
+
+        <br><br>
+
+        <p id="status"></p>
+        <ul id="sampleList"></ul>
+
+        <a href="./login.html">Already a user? Login instead</a>
+    </div>
+
+    <script>
+        let totalSamples = 5
+        let currentSample = 0
+        let samples = []
+
+        let mediaRecorder
+        let selectedDeviceId
+
+        const startBtn = document.getElementById("start")
+        const nextBtn = document.getElementById("next")
+        const restartBtn = document.getElementById("restart")
+        const submitBtn = document.getElementById("submit")
+
+        const preview = document.getElementById("preview")
+        const status = document.getElementById("status")
+        const progress = document.getElementById("progress")
+        const sampleList = document.getElementById("sampleList")
+        const micSelect = document.getElementById("micSelect")
+
+        async function loadMics() {
+            const devices = await navigator.mediaDevices.enumerateDevices()
+            const mics = devices.filter(d => d.kind === "audioinput")
+
+            micSelect.innerHTML = ""
+            mics.forEach((mic, index) => {
+                const option = document.createElement("option")
+                option.value = mic.deviceId
+                option.text = mic.label || `Microphone ${index+1}`
+                micSelect.appendChild(option)
+            })
+
+        selectedDeviceId = micSelect.value
+        }
+
+        micSelect.onchange = () => {
+            selectedDeviceId = micSelect.value
+        }
+        
+        async function recordSample(){
+            status.innerText = `Recording sample ${currentSample + 1}...`
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: { deviceId: selectedDeviceId ? { exact: selectedDeviceId }: undefined}
+            })
+
+            mediaRecorder = new MediaRecorder(stream)
+            let audioChunks = []
+
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data)
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(audioChunks, { type: "audio/wav" })
+                samples.push(blob)
+
+                preview.src = URL.createObjectURL(blob)
+
+                currentSample++
+                progress.innerText = `Sample ${currentSample} / ${totalSamples}`
+
+                const li = document.createElement("li")
+                li.textContent = `Sample ${currentSample} recorded`
+                sampleList.appendChild(li)
+
+                status.innerText = "Recording complete"
+
+                if(currentSample < totalSamples){
+                    nextBtn.disabled = false
+                } else{
+                    status.innerText = "All samples recorded!"
+                    submitBtn.disabled = false
+                }
+
+                restartBtn.disabled = false
+
+                stream.getTracks().forEach(track => track.stop())
+            }
+
+            mediaRecorder.start()
+
+            setTimeout(() => {
+                mediaRecorder.stop()
+            }, 2000)
+        }
+
+        startBtn.onclick = async () => {
+            startBtn.disabled = true
+            nextBtn.disabled = true
+            await recordSample()
+        }
+
+        nextBtn.onclick = async () =>{
+            nextBtn.disabled = true
+            await recordSample()
+        }
+
+        restartBtn.onclick = () =>{
+            currentSample = 0
+            samples = []
+
+            progress.innerText = "Sample 0/5"
+            sampleList.innerHTML = ""
+            preview.src = ""
+
+            status.innerText = "Restarted. Click Start again."
+
+            startBtn.disabled = false
+            nextBtn.disabled = true
+            submitBtn.disabled = true
+        }
+
+        function getUsernameFromQuery() {
+            const params = new URLSearchParams(window.location.search)
+            return params.get('username')
+        }
+
+        const welcomeText = document.getElementById('welcome')
+        const queryUsername = getUsernameFromQuery()
+        const savedUsername = queryUsername || localStorage.getItem('username')
+
+        if (savedUsername) {
+            welcomeText.innerText = `Username: ${savedUsername}`
+            localStorage.setItem('username', savedUsername)
+        } else {
+            welcomeText.innerText = 'No username provided. Please return to registration1.html and enter a username.'
+        }
+
+        submitBtn.onclick = async () => {
+            submit.disabled = true
+            try{
+            status.innerText = "Uploading samples..."
+
+            const username = localStorage.getItem("username")
+            const email = localStorage.getItem("email")
+
+            const fd = new FormData()
+
+            samples.forEach((sample, i)=>{
+                fd.append("audios", sample)
+            })
+
+            fd.append("username", username)
+            fd.append("email", email)
+
+            console.log(samples.length)
+            
+            const res = await fetch("http://127.0.0.1:8000/upload", {
+                method: "POST",
+                body: fd
+            })
+
+            const data = await res.json()
+
+            console.log("Server response: ", data)
+
+            status.innerText = "All samples uploaded successfully!"
+        }catch(err){
+            console.error(err)
+            status.innerText = "Upload failed!"
+        }
+        }
+
+        loadMics()
+    </script>
+</body>
+</html>

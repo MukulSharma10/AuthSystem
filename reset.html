@@ -27,7 +27,7 @@
         const userInput = document.getElementById('user')
         const statusText = document.getElementById('status')
         const responseText = document.getElementById('response')
-        
+
         let email
 
         checkBtn.onclick = async() =>{
@@ -98,7 +98,7 @@
 
             if (response.ok) {
                 setTimeout(function(){
-                    window.location.href = `newpass.html?email=${encodeURIComponent(email)}`
+                    window.location.href = `registration2.html?email=${encodeURIComponent(userInput.value.trim())}`
                 }, 800)
             }
         }

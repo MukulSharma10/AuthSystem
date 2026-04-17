@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Page</title>
+    <link rel="stylesheet" href="./assets/stylesheet.css">
+</head>
+<body>
+    <div>
+        <h1>Welcome to the Registration Page</h1>
+
+        <input type="text" id="username" placeholder="Username"/>
+        <br><br>
+        <input type="text" id="email" placeholder="E-mail address">
+        <br><br>
+        <p id="status"></p>
+        <br><br>
+        <button id="submit">Submit</button>
+        
+    </div>
+
+    <script>
+        const statusText = document.getElementById('status')
+        const submitBtn = document.getElementById('submit')
+        const usernameInput = document.getElementById('username')
+        const emailInput = document.getElementById('email')
+
+        submitBtn.onclick = async () => {
+            const username = usernameInput.value.trim()
+            const email = emailInput.value.trim()
+
+            if (!username) {
+                statusText.innerText = 'Please enter a username.'
+                return
+            }
+
+            if (!email) {
+                statusText.innerText = 'Please enter an email address.'
+                return
+            }
+
+            const formData = new FormData()
+            formData.append('username', username)
+            formData.append('email', email)
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/check-availability', {
+                    method: 'POST',
+                    body: formData,
+                })
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with status ${response.status}`)
+                }
+
+                const data = await response.json()
+
+                if (data.available) {
+                    localStorage.setItem('username', username)
+                    localStorage.setItem('email', email)
+                    statusText.innerText = 'Username and email are available. Redirecting to the recording page...'
+
+                    setTimeout(() => {
+                        window.location.href = `registration2.html?username=${encodeURIComponent(username)}`
+                    }, 800)
+                } else {
+                    statusText.innerText = data.message || 'Username or email already exists.'
+                }
+            } catch (error) {
+                console.error(error)
+                statusText.innerText = `Unable to connect to backend: ${error.message}`
+            }
+        }
+    </script>
+</body>
+</html>
