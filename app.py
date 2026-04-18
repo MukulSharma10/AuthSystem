@@ -11,7 +11,6 @@ import hashlib
 import base64
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
-from sklearn.metrics.pairwise import cosine_similarity
 import soundfile as sf
 import json
 from librosa.sequence import dtw
@@ -228,103 +227,7 @@ async def upload_audio(
 
     except Exception as e:
         return {"error": str(e)}
-        
-def extract_mfcc_from_bytes(audio_bytes, filename=None, content_type=None, target_sr=16000, n_mfcc=13):
-    suffix = None
-    if filename:
-        suffix = os.path.splitext(filename)[1]
-    if not suffix:
-        if content_type == 'audio/wav':
-            suffix = '.wav'
-        elif content_type in ('audio/webm', 'audio/ogg'):
-            suffix = '.ogg'
-        elif content_type == 'audio/mpeg':
-            suffix = '.mp3'
-        else:
-            suffix = '.wav'
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-        tmp_file.write(audio_bytes)
-        tmp_path = tmp_file.name
-
-    try:
-        try:
-            data, sr = sf.read(tmp_path)
-        except Exception:
-            # Fall back to librosa for formats like MP3 or other unsupported containers
-            data, sr = librosa.load(tmp_path, sr=None, mono=True)
-
-        if data is None or sr is None:
-            return None
-
-        if getattr(data, 'ndim', 1) > 1:
-            data = np.mean(data, axis=1)
-
-        if np.max(np.abs(data)) > 0:
-            data = data / np.max(np.abs(data))
-
-        if sr != target_sr:
-            data = librosa.resample(data, orig_sr=sr, target_sr=target_sr)
-
-        mfcc = librosa.feature.mfcc(y=data, sr=target_sr, n_mfcc=n_mfcc)
-        return mfcc.T
-
-    except Exception as e:
-        print(f"Error processing audio: {e}")
-        return None
-
-    finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
-
-def compare_mfcc(mfcc1, mfcc2):
-    if mfcc1 is None or mfcc2 is None:
-        return None
-
-    if len(mfcc1) == 0 or len(mfcc2) == 0:
-        return None
-    
-    min_len = min(len(mfcc1), len(mfcc2))
-    mfcc1, mfcc2 = mfcc1[:min_len], mfcc2[:min_len]
-    
-    flat_mfcc1, flat_mfcc2 = mfcc1.flatten(), mfcc2.flatten()
-    
-    if flat_mfcc1.size == 0 or flat_mfcc2.size == 0:
-        return None
-    
-    return float(
-        cosine_similarity([flat_mfcc1], [flat_mfcc2])[0][0]
-    )
-    
-def extract_mfcc(file_path):
-    y, sr = librosa.load(file_path, sr=None)
-
-    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-
-    # Convert to fixed-size vector
-    mfcc_mean = np.mean(mfcc, axis=1)
-    mfcc_std = np.std(mfcc, axis=1)
-
-    features = np.concatenate([mfcc_mean, mfcc_std]) 
-    return features.tolist()
-
-def build_template(cursor, username):
-    cursor.execute(
-        "SELECT mfcc_features FROM voice_features WHERE username = %s",
-        (username,)
-    )
-    
-    rows = cursor.fetchall()
-    
-    if not rows:
-        return None
-    
-    vectors = np.array([row[0] for row in rows])
-    
-    template = np.mean(vectors, axis=0)
-    
-    return template
-
+            
 def extract_mfcc_full(file_path):
     print("Loading audio: ", file_path)
     
@@ -390,5 +293,5 @@ def safe_extract(file_path):
     try:
         return extract_mfcc_full(file_path)
     except Exception as e:
-        print("❌ MFCC ERROR:", repr(e))
+        print("MFCC ERROR:", repr(e))
         return None
