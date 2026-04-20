@@ -57,8 +57,8 @@ async def match_voice(
             temp.write(await audio.read())
             temp_path = temp.name
         
-        print("SAVED TEMP FILE: ", temp_path)
-        print("Audio size: ", os.path.getsize(temp_path) )
+        # print("SAVED TEMP FILE: ", temp_path)
+        # print("Audio size: ", os.path.getsize(temp_path) )
         
         test_mfcc = safe_extract(temp_path)
         
@@ -73,7 +73,7 @@ async def match_voice(
         wav_path = temp_path + "_converted.wav"
         convert_to_wav(temp_path, wav_path)
         
-        print("MFCC extracted successfully")
+        # print("MFCC extracted successfully")
         
         cur = conn.cursor()
         cur.execute(
@@ -88,21 +88,20 @@ async def match_voice(
         
         scores = []
 
-        print("Test MFCC shape: ", np.array(test_mfcc).shape)
-        
+        # print("Test MFCC shape: ", np.array(test_mfcc).shape)
         
         for row in rows:
             
             stored_mfcc = row[0]
             
-            print("Raw stored type:", type(stored_mfcc))
-            print("Raw stored value preview:", str(stored_mfcc)[:100])
+            # print("Raw stored type:", type(stored_mfcc))
+            # print("Raw stored value preview:", str(stored_mfcc)[:100])
             
             if isinstance(stored_mfcc, str):
                 stored_mfcc = json.loads(stored_mfcc)
             
             stored_mfcc = np.array(stored_mfcc)
-            print("Stored mfcc: ", type(stored_mfcc))
+            # print("Stored mfcc: ", type(stored_mfcc))
             
             if stored_mfcc.ndim == 0:
                 print("Invalid stored MFCC (scalar)")
@@ -112,9 +111,9 @@ async def match_voice(
                 stored_mfcc = stored_mfcc.reshape(1, -1)
                 
             stored_mfcc = stored_mfcc.T
-            print("Stored mfcc: ", type(stored_mfcc))
+            # print("Stored mfcc: ", type(stored_mfcc))
             
-            print("Stored MFCC shape: ", np.array(stored_mfcc).shape)
+            # print("Stored MFCC shape: ", np.array(stored_mfcc).shape)
             
             if test_mfcc.shape[1] != stored_mfcc.shape[1]:
                 print("Feature mismatch!", test_mfcc.shape, stored_mfcc.shape)
@@ -124,19 +123,21 @@ async def match_voice(
             if isinstance(score, list):
                 score = np.mean(score)
             
-            print("Score:", score)
-            print("Type:", type(score))
+            # print("Type:", type(score))
             scores.append(score)
-            print("Scores: ", type(scores))
+            # print("Scores: ", type(scores))
+            # print("Score:", score)
         
         final_score = max((scores))
+        print("Scores: ", scores)
+
         print("FINAL SCORE: ", final_score)
         
         os.remove(temp_path)
         cur.close()
         
-        threshold = 0.98
-        print("THRESHOLD TYPE:", type(threshold))
+        threshold = 0.99
+        # print("THRESHOLD TYPE:", type(threshold))
         
         return {
             "result": "MATCH" if final_score >= threshold else "NO_MATCH",
