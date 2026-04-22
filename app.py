@@ -16,8 +16,14 @@ import json
 from librosa.sequence import dtw
 from typing import List
 import subprocess
+from speechbrain.inference.speaker import SpeakerRecognition
 
 app = FastAPI()
+
+model = SpeakerRecognition.from_hparams(
+    source="speechbrain/spkrec-ecapa-voxceleb",
+    savedir="pretrained_models/spkrec-ecapa-voxceleb"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -62,6 +68,11 @@ async def match_voice(
         
         test_mfcc = safe_extract(temp_path)
         
+        wav_path = temp_path + "_converted.wav"
+        convert_to_wav(temp_path, wav_path)
+        
+        test_embedding = extract_embedding(wav_path)
+        
         if test_mfcc is None:
             return {"error": "MFCC not generated"}
                 
@@ -77,7 +88,7 @@ async def match_voice(
         
         cur = conn.cursor()
         cur.execute(
-            "SELECT mfcc_matrix FROM voice_features WHERE username = %s",
+            "SELECT mfcc_matrix, embedding FROM voice_features WHERE username = %s",
             (username,)
         )
         
@@ -92,11 +103,12 @@ async def match_voice(
         
         for row in rows:
             
-            stored_mfcc = row[0]
+            stored_mfcc, stored_embedding = row
             
             # print("Raw stored type:", type(stored_mfcc))
             # print("Raw stored value preview:", str(stored_mfcc)[:100])
             
+            #----------MFCC PART---------#
             if isinstance(stored_mfcc, str):
                 stored_mfcc = json.loads(stored_mfcc)
             
@@ -111,22 +123,35 @@ async def match_voice(
                 stored_mfcc = stored_mfcc.reshape(1, -1)
                 
             stored_mfcc = stored_mfcc.T
-            # print("Stored mfcc: ", type(stored_mfcc))
-            
-            # print("Stored MFCC shape: ", np.array(stored_mfcc).shape)
             
             if test_mfcc.shape[1] != stored_mfcc.shape[1]:
                 print("Feature mismatch!", test_mfcc.shape, stored_mfcc.shape)
             
-            score = dtw_cosine_mfcc(test_mfcc, stored_mfcc)
+            mfcc_score = dtw_cosine_mfcc(test_mfcc, stored_mfcc)
+            # print("Stored mfcc: ", type(stored_mfcc))
             
-            if isinstance(score, list):
-                score = np.mean(score)
+            # print("Stored MFCC shape: ", np.array(stored_mfcc).shape)  
             
-            # print("Type:", type(score))
-            scores.append(score)
-            # print("Scores: ", type(scores))
-            # print("Score:", score)
+            #--------EMBEDDING PART-------#
+            
+            if isinstance(stored_embedding, str):
+                stored_embedding = json.loads(stored_embedding)
+                
+            stored_embedding = np.array(stored_embedding)
+            
+            emb_score = cosine_similarity(
+                [test_embedding],
+                [stored_embedding]
+            )[0][0]  
+            
+            #----------COMBINED SCORE-------------#
+            
+            if isinstance(mfcc_score, list):
+                mfcc_score = np.mean(mfcc_score)
+            
+            final = 0.6 * emb_score + 0.4 * mfcc_score
+            
+            scores.append(final)
         
         final_score = max((scores))
         print("Scores: ", scores)
@@ -136,12 +161,11 @@ async def match_voice(
         os.remove(temp_path)
         cur.close()
         
-        threshold = 0.99
-        # print("THRESHOLD TYPE:", type(threshold))
+        threshold = 0.75
         
         return {
             "result": "MATCH" if final_score >= threshold else "NO_MATCH",
-            "score": final_score
+            "score": float(final_score)
         }
         
     except Exception as e:
@@ -209,10 +233,15 @@ async def upload_audio(
                 temp_path = temp.name
 
             mfcc_matrix = extract_mfcc_full(temp_path)
+            
+            wav_path = temp_path + "converted.wav"
+            convert_to_wav(temp_path, wav_path)
+            
+            embedding = extract_embedding(wav_path).tolist()
 
             cur.execute(
-                "INSERT INTO voice_features (username, email, mfcc_matrix) VALUES (%s, %s, %s)",
-                (username, email, json.dumps(mfcc_matrix))
+                "INSERT INTO voice_features (username, email, mfcc_matrix, embedding) VALUES (%s, %s, %s, %s)",
+                (username, email, json.dumps(mfcc_matrix), embedding)
             )
 
             inserted += 1
@@ -296,3 +325,7 @@ def safe_extract(file_path):
     except Exception as e:
         print("MFCC ERROR:", repr(e))
         return None
+    
+def extract_embedding(file_path):
+    emb = model.encode_file(file_path)
+    return emb.squeeze().tolist()
